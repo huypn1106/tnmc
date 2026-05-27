@@ -1,0 +1,6 @@
+{
+  "name": "FairShare",
+  "description": "Ứng dụng quản lý và chia sẻ chi phí nhóm thông minh, tinh tế.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
