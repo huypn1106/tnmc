@@ -37,3 +37,18 @@ export interface Transaction {
   createdBy: string;
   createdAt: string;
 }
+
+export interface Task {
+  id: string;
+  title: string;
+  month: string; // YYYY-MM
+  completed: boolean;
+  completedBy?: string; // uid
+  completedByName?: string; // cached name
+  completedAt?: string; // ISO string
+  createdBy: string; // uid
+  createdByName?: string; // cached name
+  createdAt: string; // ISO string
+  assignedTo?: string; // uid (optional assignee)
+}
+

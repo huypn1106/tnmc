@@ -1,4 +1,4 @@
-import { LayoutGrid, Receipt, PlusCircle, Users } from 'lucide-react';
+import { LayoutGrid, Receipt, PlusCircle, Users, CheckSquare } from 'lucide-react';
 
 interface BottomNavProps {
   activeTab: string;
@@ -9,6 +9,7 @@ export default function BottomNav({ activeTab, setActiveTab }: BottomNavProps) {
   const tabs = [
     { id: 'overview', label: 'Dashboard', icon: LayoutGrid },
     { id: 'transactions', label: 'Activity', icon: Receipt },
+    { id: 'tasks', label: 'Tasks', icon: CheckSquare },
     { id: 'new-expense', label: 'Add', icon: PlusCircle },
     { id: 'balances', label: 'Members', icon: Users },
   ];

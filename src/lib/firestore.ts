@@ -15,7 +15,7 @@ import {
   Timestamp,
 } from 'firebase/firestore';
 import { db } from './firebase';
-import { Group, GroupMember, Transaction } from '../types';
+import { Group, GroupMember, Transaction, Task } from '../types';
 
 // ─── Group Operations ───
 
@@ -156,4 +156,74 @@ export function subscribeToTransactions(
     })) as Transaction[];
     callback(transactions);
   });
+}
+
+// ─── Task Operations ───
+
+export async function addTask(
+  groupId: string,
+  task: Omit<Task, 'id' | 'createdAt' | 'completed'>
+): Promise<string> {
+  const taskData = {
+    ...task,
+    completed: false,
+    createdAt: new Date().toISOString(),
+  };
+
+  const docRef = await addDoc(
+    collection(db, 'groups', groupId, 'tasks'),
+    taskData
+  );
+  return docRef.id;
+}
+
+export async function deleteTask(
+  groupId: string,
+  taskId: string
+): Promise<void> {
+  await deleteDoc(doc(db, 'groups', groupId, 'tasks', taskId));
+}
+
+export async function toggleTaskStatus(
+  groupId: string,
+  taskId: string,
+  completed: boolean,
+  user: { uid: string; name: string } | null
+): Promise<void> {
+  const updateData = {
+    completed,
+    completedAt: completed ? new Date().toISOString() : null,
+    completedBy: completed ? (user?.uid || null) : null,
+    completedByName: completed ? (user?.name || null) : null,
+  };
+  await updateDoc(doc(db, 'groups', groupId, 'tasks', taskId), updateData);
+}
+
+export function subscribeToTasks(
+  groupId: string,
+  callback: (tasks: Task[]) => void,
+  onError?: (error: any) => void
+): () => void {
+  const q = query(
+    collection(db, 'groups', groupId, 'tasks'),
+    orderBy('createdAt', 'desc')
+  );
+
+  return onSnapshot(
+    q,
+    (snapshot) => {
+      const tasks: Task[] = snapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      })) as Task[];
+      callback(tasks);
+    },
+    (error) => {
+      if (onError) {
+        onError(error);
+      } else {
+        console.error('Error subscribing to tasks:', error);
+      }
+    }
+  );
 }

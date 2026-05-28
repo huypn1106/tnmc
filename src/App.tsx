@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { useGroup } from './hooks/useGroup';
 import { useTransactions, useBalances } from './hooks/useTransactions';
+import { useTasks } from './hooks/useTasks';
 import { addTransaction as firestoreAddTransaction, deleteTransaction } from './lib/firestore';
 import { Transaction, GroupMember } from './types';
 
@@ -15,6 +16,7 @@ import Transactions from './components/Transactions';
 import NewExpense from './components/NewExpense';
 import GroupBalances from './components/GroupBalances';
 import SettleUpModal from './components/SettleUpModal';
+import Tasks from './components/Tasks';
 
 // Core vietnamese currency formatter helper
 const formatVND = (value: number) => {
@@ -33,6 +35,7 @@ function AppContent() {
 
   const { group, loading: groupLoading } = useGroup(activeGroupId);
   const { transactions, loading: txLoading } = useTransactions(activeGroupId);
+  const { tasks, loading: tasksLoading, error: tasksError } = useTasks(activeGroupId);
 
   // Get member UIDs and member map from group
   const memberUids = group?.memberUids || [];
@@ -72,7 +75,7 @@ function AppContent() {
   }
 
   // Loading group data
-  if (groupLoading || txLoading) {
+  if (groupLoading || txLoading || tasksLoading) {
     return (
       <div className="min-h-screen bg-[#f9f9ff] flex items-center justify-center">
         <div className="text-center">
@@ -178,6 +181,8 @@ function AppContent() {
         return `${groupName}`;
       case 'transactions':
         return 'Lịch sử Giao dịch';
+      case 'tasks':
+        return 'Danh sách Nhiệm vụ';
       case 'new-expense':
         return 'Thêm chi phí';
       case 'balances':
@@ -210,6 +215,18 @@ function AppContent() {
             currentUserId={user.uid}
             formatVND={formatVND}
             onDeleteTransaction={handleDeleteTransaction}
+          />
+        );
+      case 'tasks':
+        return (
+          <Tasks
+            groupId={activeGroupId!}
+            tasks={tasks}
+            error={tasksError}
+            members={membersArray}
+            membersMap={membersMap}
+            currentUserId={user.uid}
+            groupName={group?.name || ''}
           />
         );
       case 'new-expense':
