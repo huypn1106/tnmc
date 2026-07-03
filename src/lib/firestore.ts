@@ -261,6 +261,57 @@ export async function deleteTransaction(
   }
 }
 
+export async function updateTransaction(
+  groupId: string,
+  txId: string,
+  updates: Partial<Transaction>,
+  userId?: string
+): Promise<void> {
+  const txRef = doc(db, 'groups', groupId, 'transactions', txId);
+  await updateDoc(txRef, {
+    ...updates,
+    updatedAt: new Date().toISOString(),
+  });
+
+  try {
+    let updaterName = 'Thành viên';
+    let updaterAvatar = '';
+    if (userId) {
+      const groupSnap = await getDoc(doc(db, 'groups', groupId));
+      if (groupSnap.exists()) {
+        const groupData = groupSnap.data() as Group;
+        const updater = groupData.members[userId];
+        if (updater) {
+          updaterName = updater.name;
+          updaterAvatar = updater.avatar;
+        }
+      }
+    }
+
+    const titleStr = updates.title ? `"${updates.title}"` : 'chi phí';
+    await addDoc(
+      collection(db, 'groups', groupId, 'notifications'),
+      {
+        groupId,
+        type: 'expense_updated',
+        title: 'Đã cập nhật chi phí',
+        message: `${updaterName} đã cập nhật ${titleStr}`,
+        createdBy: userId || 'system',
+        createdByName: updaterName,
+        createdByAvatar: updaterAvatar,
+        createdAt: new Date().toISOString(),
+        readBy: [],
+        metadata: {
+          transactionId: txId,
+        }
+      }
+    );
+  } catch (err) {
+    console.error('Error creating expense update notification:', err);
+  }
+}
+
+
 export function subscribeToTransactions(
   groupId: string,
   callback: (transactions: Transaction[]) => void

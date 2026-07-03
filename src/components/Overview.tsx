@@ -280,7 +280,10 @@ export default function Overview({
                 <div key={c.id} className="group">
                   <div className="flex justify-between text-xs font-medium mb-1.5">
                     <span className="text-stone-700 font-medium">{c.label}</span>
-                    <span className="text-[#012d1d] font-bold font-mono">{Math.round(c.percent)}%</span>
+                    <div className="flex items-center gap-2">
+                      <span className="text-stone-500 font-sans">{formatVND(c.amount)}</span>
+                      <span className="text-[#012d1d] font-bold font-mono">{Math.round(c.percent)}%</span>
+                    </div>
                   </div>
                   <div className="w-full bg-[#f0f3ff] h-2 rounded-full overflow-hidden shadow-inner">
                     <div

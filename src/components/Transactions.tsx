@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react';
-import { SlidersHorizontal, ChevronDown, Bolt, ShoppingBag, Wifi, Utensils, Car, MoreHorizontal, Trash2 } from 'lucide-react';
+import { SlidersHorizontal, ChevronDown, Bolt, ShoppingBag, Wifi, Utensils, Car, MoreHorizontal, Trash2, Edit2 } from 'lucide-react';
 import { Transaction, GroupMember, CategoryType } from '../types';
+import EditExpenseModal from './EditExpenseModal';
 
 interface TransactionsProps {
   transactions: Transaction[];
@@ -9,12 +10,14 @@ interface TransactionsProps {
   currentUserId: string;
   formatVND: (value: number) => string;
   onDeleteTransaction: (txId: string) => void;
+  onUpdateTransaction: (txId: string, updates: Partial<Transaction>) => void;
 }
 
-export default function Transactions({ transactions, members, membersMap, currentUserId, formatVND, onDeleteTransaction }: TransactionsProps) {
+export default function Transactions({ transactions, members, membersMap, currentUserId, formatVND, onDeleteTransaction, onUpdateTransaction }: TransactionsProps) {
   const [selectedCategory, setSelectedCategory] = useState<string>('Tất cả');
   const [searchQuery, setSearchQuery] = useState<string>('');
-  const [visibleCount, setVisibleCount] = useState<number>(6);
+  const [visibleCount, setVisibleCount] = useState<number>(12);
+  const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
 
   const categoryIconMap = (category: CategoryType) => {
     const size = 18;
@@ -104,15 +107,18 @@ export default function Transactions({ transactions, members, membersMap, curren
               <div key={tx.id} className="bg-white rounded-2xl p-5 shadow-soft border border-[#c1c8c2]/35 flex flex-col justify-between hover:shadow-md transition-shadow duration-200 group/card">
                 <div>
                   <div className="flex justify-between items-start gap-3 mb-5">
-                    <div className="flex gap-3 items-center">
+                    <div className="flex gap-3 items-center flex-1 min-w-0">
                       <div className="w-10 h-10 rounded-full bg-[#aeeecb]/40 text-[#012d1d] flex items-center justify-center shrink-0">{categoryIconMap(tx.category)}</div>
-                      <div>
-                        <h3 className="font-bold text-base text-[#151c27] tracking-tight leading-snug line-clamp-1">{tx.title}</h3>
-                        {tx.description && <p className="text-xs text-stone-500 font-medium leading-none mt-1 line-clamp-1">{tx.description}</p>}
+                      <div className="flex-1 min-w-0">
+                        <h3 className="font-bold text-base text-[#151c27] tracking-tight leading-snug break-words">{tx.title}</h3>
+                        {tx.description && <p className="text-xs text-stone-500 font-medium leading-tight mt-1 break-words">{tx.description}</p>}
                       </div>
                     </div>
                     <div className="flex items-center gap-1.5 shrink-0">
                       <span className="text-[10px] font-bold text-stone-500 bg-[#f0f3ff] px-2 py-1 rounded-md select-none">{formatDateVN(tx.date)}</span>
+                      <button onClick={() => setEditingTransaction(tx)} className="opacity-0 group-hover/card:opacity-100 text-stone-400 hover:text-[#012d1d] p-1 rounded-md hover:bg-stone-100 transition-all cursor-pointer" title="Chỉnh sửa">
+                        <Edit2 size={14} />
+                      </button>
                       <button onClick={() => onDeleteTransaction(tx.id)} className="opacity-0 group-hover/card:opacity-100 text-stone-400 hover:text-[#ba1a1a] p-1 rounded-md hover:bg-[#ffdad6]/50 transition-all cursor-pointer" title="Xóa">
                         <Trash2 size={14} />
                       </button>
@@ -138,11 +144,22 @@ export default function Transactions({ transactions, members, membersMap, curren
 
       {filteredTransactions.length > visibleCount && (
         <div className="mt-8 flex justify-center">
-          <button onClick={() => setVisibleCount((prev) => prev + 3)}
+          <button onClick={() => setVisibleCount((prev) => prev + 12)}
             className="text-[#012d1d] font-bold text-xs px-6 py-2.5 border border-[#c1c8c2] hover:border-[#012d1d] hover:bg-stone-50 rounded-full transition-colors active:scale-95 duration-150 cursor-pointer select-none">
             Tải thêm giao dịch
           </button>
         </div>
+      )}
+
+      {editingTransaction && (
+        <EditExpenseModal
+          transaction={editingTransaction}
+          members={members}
+          currentUserId={currentUserId}
+          onUpdateTransaction={onUpdateTransaction}
+          onClose={() => setEditingTransaction(null)}
+          formatVND={formatVND}
+        />
       )}
     </div>
   );

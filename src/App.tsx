@@ -4,7 +4,7 @@ import { useGroup } from './hooks/useGroup';
 import { useTransactions, useBalances } from './hooks/useTransactions';
 import { useTasks } from './hooks/useTasks';
 import { useNotes } from './hooks/useNotes';
-import { addTransaction as firestoreAddTransaction, deleteTransaction } from './lib/firestore';
+import { addTransaction as firestoreAddTransaction, deleteTransaction, updateTransaction as firestoreUpdateTransaction } from './lib/firestore';
 import { Transaction, GroupMember } from './types';
 
 import LoginPage from './components/LoginPage';
@@ -215,6 +215,12 @@ function AppContent() {
     await deleteTransaction(activeGroupId, txId, user.uid);
   };
 
+  // Update transaction handler
+  const handleUpdateTransaction = async (txId: string, updates: Partial<Transaction>) => {
+    if (!activeGroupId || !user) return;
+    await firestoreUpdateTransaction(activeGroupId, txId, updates, user.uid);
+  };
+
   // Exit group → go back to selector
   const handleExitGroup = () => {
     setActiveGroupId(null);
@@ -267,6 +273,7 @@ function AppContent() {
             currentUserId={user.uid}
             formatVND={formatVND}
             onDeleteTransaction={handleDeleteTransaction}
+            onUpdateTransaction={handleUpdateTransaction}
           />
         );
       case 'tasks':
