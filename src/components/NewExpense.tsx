@@ -70,7 +70,9 @@ export default function NewExpense({ members, currentUserId, onAddTransaction, s
       splitWith,
       createdBy: currentUserId,
     });
-    setActiveTab('transactions');
+    
+    setAmount('');
+    setDescription('');
   };
 
   return (

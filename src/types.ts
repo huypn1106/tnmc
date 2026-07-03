@@ -52,3 +52,32 @@ export interface Task {
   assignedTo?: string; // uid (optional assignee)
 }
 
+export interface Note {
+  id: string;
+  title: string;
+  content: string;
+  createdBy: string; // uid
+  createdByName?: string; // cached name
+  createdAt: string; // ISO string
+  updatedAt?: string; // ISO string
+}
+
+export interface GroupNotification {
+  id: string;
+  groupId: string;
+  type: 'expense_added' | 'expense_deleted' | 'settle_up' | 'task_added' | 'task_completed' | 'task_deleted' | 'member_joined' | 'note_added' | 'note_deleted';
+  title: string;
+  message: string;
+  createdBy: string; // uid
+  createdByName: string; // cached name
+  createdByAvatar?: string; // cached avatar url
+  createdAt: string; // ISO string
+  readBy: string[]; // array of uids who have read this
+  metadata?: {
+    transactionId?: string;
+    taskId?: string;
+    noteId?: string;
+    amount?: number;
+    assignedTo?: string;
+  };
+}

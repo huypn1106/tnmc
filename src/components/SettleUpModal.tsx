@@ -8,9 +8,10 @@ interface SettleUpModalProps {
   onClose: () => void;
   onAddTransaction: (tx: Omit<Transaction, 'id' | 'createdAt'>) => void;
   formatVND: (value: number) => string;
+  defaultDate?: string;
 }
 
-export default function SettleUpModal({ members, currentUserId, onClose, onAddTransaction, formatVND }: SettleUpModalProps) {
+export default function SettleUpModal({ members, currentUserId, onClose, onAddTransaction, formatVND, defaultDate }: SettleUpModalProps) {
   const defaultPayer = members.find(m => m.uid !== currentUserId)?.uid || members[0]?.uid || '';
   const defaultReceiver = members.find(m => m.uid === currentUserId)?.uid || members[1]?.uid || '';
 
@@ -39,7 +40,7 @@ export default function SettleUpModal({ members, currentUserId, onClose, onAddTr
       description: 'Giao dịch quyết toán số dư nợ trực tiếp',
       category: 'other',
       amount: numericAmount,
-      date: new Date().toISOString().split('T')[0],
+      date: defaultDate || new Date().toISOString().split('T')[0],
       paidBy: payerId,
       splitWith: [receiverId],
       createdBy: currentUserId,

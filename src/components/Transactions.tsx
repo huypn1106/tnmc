@@ -12,21 +12,9 @@ interface TransactionsProps {
 }
 
 export default function Transactions({ transactions, members, membersMap, currentUserId, formatVND, onDeleteTransaction }: TransactionsProps) {
-  const [selectedMonth, setSelectedMonth] = useState<string>('Tất cả');
   const [selectedCategory, setSelectedCategory] = useState<string>('Tất cả');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [visibleCount, setVisibleCount] = useState<number>(6);
-
-  const monthOptions = useMemo(() => {
-    const list = new Set<string>();
-    transactions.forEach((tx) => {
-      try {
-        const parts = tx.date.split('-');
-        if (parts.length === 3) list.add(`Tháng ${parts[1]}, ${parts[0]}`);
-      } catch (e) {}
-    });
-    return ['Tất cả', ...Array.from(list)];
-  }, [transactions]);
 
   const categoryIconMap = (category: CategoryType) => {
     const size = 18;
@@ -47,11 +35,6 @@ export default function Transactions({ transactions, members, membersMap, curren
 
   const filteredTransactions = useMemo(() => {
     return transactions.filter((tx) => {
-      if (selectedMonth !== 'Tất cả') {
-        const parts = tx.date.split('-');
-        const formattedMonth = `Tháng ${parts[1]}, ${parts[0]}`;
-        if (formattedMonth !== selectedMonth) return false;
-      }
       if (selectedCategory !== 'Tất cả' && tx.category !== selectedCategory) return false;
       if (searchQuery.trim() !== '') {
         const query = searchQuery.toLowerCase();
@@ -63,7 +46,7 @@ export default function Transactions({ transactions, members, membersMap, curren
       }
       return true;
     });
-  }, [transactions, selectedMonth, selectedCategory, searchQuery, membersMap]);
+  }, [transactions, selectedCategory, searchQuery, membersMap]);
 
   const formatDateVN = (dateStr: string) => {
     try {
@@ -90,13 +73,6 @@ export default function Transactions({ transactions, members, membersMap, curren
       <div className="flex flex-wrap gap-2.5 items-center select-none bg-stone-50 p-3 rounded-2xl border border-stone-100">
         <SlidersHorizontal size={16} className="text-stone-500 mr-1 hidden sm:block" />
         <div className="relative shrink-0">
-          <select value={selectedMonth} onChange={(e) => setSelectedMonth(e.target.value)}
-            className="appearance-none bg-white border border-[#c1c8c2] rounded-full py-1.5 pl-4 pr-10 text-xs font-bold text-stone-700 focus:outline-[#012d1d] cursor-pointer">
-            {monthOptions.map((opt) => <option key={opt} value={opt}>{opt === 'Tất cả' ? 'Tất cả thời gian' : opt}</option>)}
-          </select>
-          <ChevronDown size={14} className="absolute right-3.5 top-1/2 -translate-y-1/2 text-stone-500 pointer-events-none" />
-        </div>
-        <div className="relative shrink-0">
           <select value={selectedCategory} onChange={(e) => setSelectedCategory(e.target.value)}
             className="appearance-none bg-white border border-[#c1c8c2] rounded-full py-1.5 pl-4 pr-10 text-xs font-bold text-stone-700 focus:outline-[#012d1d] cursor-pointer">
             <option value="Tất cả">Tất cả danh mục</option>
@@ -109,8 +85,8 @@ export default function Transactions({ transactions, members, membersMap, curren
           </select>
           <ChevronDown size={14} className="absolute right-3.5 top-1/2 -translate-y-1/2 text-stone-500 pointer-events-none" />
         </div>
-        {(selectedMonth !== 'Tất cả' || selectedCategory !== 'Tất cả' || searchQuery !== '') && (
-          <button onClick={() => { setSelectedMonth('Tất cả'); setSelectedCategory('Tất cả'); setSearchQuery(''); }}
+        {(selectedCategory !== 'Tất cả' || searchQuery !== '') && (
+          <button onClick={() => { setSelectedCategory('Tất cả'); setSearchQuery(''); }}
             className="text-xs text-[#ba1a1a] hover:text-[#93000a] font-bold px-2 py-1 underline transition-all cursor-pointer">Xóa bộ lọc</button>
         )}
       </div>

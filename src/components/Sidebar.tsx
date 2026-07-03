@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { LayoutGrid, Receipt, PlusCircle, Users, Copy, Check, LogOut, CheckSquare } from 'lucide-react';
+import { LayoutGrid, Receipt, PlusCircle, Users, Copy, Check, LogOut, CheckSquare, StickyNote } from 'lucide-react';
 
 interface SidebarProps {
   activeTab: string;
@@ -17,6 +17,7 @@ export default function Sidebar({ activeTab, setActiveTab, onSettleUpClick, grou
     { id: 'overview', label: 'Tổng quan', icon: LayoutGrid },
     { id: 'transactions', label: 'Giao dịch', icon: Receipt },
     { id: 'tasks', label: 'Nhiệm vụ', icon: CheckSquare },
+    { id: 'notes', label: 'Ghi chú', icon: StickyNote },
     { id: 'new-expense', label: 'Thêm chi phí', icon: PlusCircle },
     { id: 'balances', label: 'Thành viên & Số dư', icon: Users },
   ];

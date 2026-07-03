@@ -1,8 +1,9 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { useGroup } from './hooks/useGroup';
 import { useTransactions, useBalances } from './hooks/useTransactions';
 import { useTasks } from './hooks/useTasks';
+import { useNotes } from './hooks/useNotes';
 import { addTransaction as firestoreAddTransaction, deleteTransaction } from './lib/firestore';
 import { Transaction, GroupMember } from './types';
 
@@ -17,6 +18,8 @@ import NewExpense from './components/NewExpense';
 import GroupBalances from './components/GroupBalances';
 import SettleUpModal from './components/SettleUpModal';
 import Tasks from './components/Tasks';
+import Notes from './components/Notes';
+import MonthFilter from './components/MonthFilter';
 
 // Core vietnamese currency formatter helper
 const formatVND = (value: number) => {
@@ -32,18 +35,59 @@ function AppContent() {
   });
   const [activeTab, setActiveTab] = useState<string>('overview');
   const [isSettleModalOpen, setIsSettleModalOpen] = useState(false);
+  const [selectedMonth, setSelectedMonth] = useState<string>(() => {
+    const today = new Date();
+    return `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
+  });
 
   const { group, loading: groupLoading } = useGroup(activeGroupId);
   const { transactions, loading: txLoading } = useTransactions(activeGroupId);
   const { tasks, loading: tasksLoading, error: tasksError } = useTasks(activeGroupId);
+  const { notes, loading: notesLoading, error: notesError } = useNotes(activeGroupId);
 
   // Get member UIDs and member map from group
   const memberUids = group?.memberUids || [];
   const membersMap = group?.members || {};
   const membersArray: GroupMember[] = memberUids.map((uid) => membersMap[uid]).filter(Boolean);
 
-  // Compute balances
-  const balances = useBalances(transactions, memberUids);
+  // Extract available months from transactions
+  const availableMonths = useMemo(() => {
+    const list = new Set<string>();
+    const today = new Date();
+    const currentMonth = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
+    list.add(currentMonth);
+
+    transactions.forEach((tx) => {
+      try {
+        const parts = tx.date.split('-');
+        if (parts.length >= 2) list.add(`${parts[0]}-${parts[1]}`);
+      } catch (e) {}
+    });
+    // Sort descending
+    return Array.from(list).sort((a, b) => b.localeCompare(a));
+  }, [transactions]);
+
+  // Filter transactions by selected month
+  const filteredTransactions = useMemo(() => {
+    if (selectedMonth === 'all') return transactions;
+    return transactions.filter(tx => tx.date.startsWith(selectedMonth));
+  }, [transactions, selectedMonth]);
+
+  // Compute balances from filtered transactions
+  const balances = useBalances(filteredTransactions, memberUids);
+
+  // Helper to get settlement transaction date based on selected month
+  const getSettleDate = () => {
+    if (selectedMonth === 'all') return new Date().toISOString().split('T')[0];
+    const today = new Date();
+    const currentMonth = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
+    if (selectedMonth === currentMonth) return today.toISOString().split('T')[0];
+    
+    // For past/future months, use the last day of the selected month
+    const [year, month] = selectedMonth.split('-');
+    const lastDay = new Date(parseInt(year, 10), parseInt(month, 10), 0);
+    return lastDay.toISOString().split('T')[0];
+  };
 
   // Show loading spinner
   if (authLoading) {
@@ -75,7 +119,7 @@ function AppContent() {
   }
 
   // Loading group data
-  if (groupLoading || txLoading || tasksLoading) {
+  if (groupLoading || txLoading || tasksLoading || notesLoading) {
     return (
       <div className="min-h-screen bg-[#f9f9ff] flex items-center justify-center">
         <div className="text-center">
@@ -104,12 +148,14 @@ function AppContent() {
     const debtorName = membersMap[memberId]?.name || 'Thành viên';
     const creditorName = membersMap[creditorId]?.name || 'Thành viên';
 
+    const settleDate = getSettleDate();
+
     await firestoreAddTransaction(activeGroupId, {
       title: `Quyết toán: ${debtorName} trả ${creditorName}`,
       description: `Đã trả hoàn toàn khoản nợ`,
       category: 'other',
       amount: Math.abs(balance),
-      date: new Date().toISOString().split('T')[0],
+      date: settleDate,
       paidBy: memberId,
       splitWith: [creditorId],
       createdBy: user.uid,
@@ -143,12 +189,14 @@ function AppContent() {
       const dName = membersMap[debtor.id]?.name || debtor.id;
       const cName = membersMap[creditor.id]?.name || creditor.id;
 
+      const settleDate = getSettleDate();
+
       await firestoreAddTransaction(activeGroupId, {
         title: `Quyết toán: ${dName} trả ${cName}`,
         description: `Thanh toán sòng phẳng tự động toàn nhóm`,
         category: 'other',
         amount: payAmount,
-        date: new Date().toISOString().split('T')[0],
+        date: settleDate,
         paidBy: debtor.id,
         splitWith: [creditor.id],
         createdBy: user.uid,
@@ -163,8 +211,8 @@ function AppContent() {
 
   // Delete transaction handler
   const handleDeleteTransaction = async (txId: string) => {
-    if (!activeGroupId) return;
-    await deleteTransaction(activeGroupId, txId);
+    if (!activeGroupId || !user) return;
+    await deleteTransaction(activeGroupId, txId, user.uid);
   };
 
   // Exit group → go back to selector
@@ -183,6 +231,8 @@ function AppContent() {
         return 'Lịch sử Giao dịch';
       case 'tasks':
         return 'Danh sách Nhiệm vụ';
+      case 'notes':
+        return 'Ghi chú Nhóm';
       case 'new-expense':
         return 'Thêm chi phí';
       case 'balances':
@@ -197,7 +247,9 @@ function AppContent() {
       case 'overview':
         return (
           <Overview
-            transactions={transactions}
+            transactions={filteredTransactions}
+            allTransactions={transactions}
+            selectedMonth={selectedMonth}
             members={membersArray}
             membersMap={membersMap}
             currentUserId={user.uid}
@@ -209,7 +261,7 @@ function AppContent() {
       case 'transactions':
         return (
           <Transactions
-            transactions={transactions}
+            transactions={filteredTransactions}
             members={membersArray}
             membersMap={membersMap}
             currentUserId={user.uid}
@@ -229,6 +281,17 @@ function AppContent() {
             groupName={group?.name || ''}
           />
         );
+      case 'notes':
+        return (
+          <Notes
+            groupId={activeGroupId!}
+            notes={notes}
+            error={notesError}
+            membersMap={membersMap}
+            currentUserId={user.uid}
+            groupName={group?.name || ''}
+          />
+        );
       case 'new-expense':
         return (
           <NewExpense
@@ -242,13 +305,14 @@ function AppContent() {
       case 'balances':
         return (
           <GroupBalances
-            transactions={transactions}
+            transactions={filteredTransactions}
             members={membersArray}
             membersMap={membersMap}
             currentUserId={user.uid}
             onSettleMember={handleSettleMember}
             onSettleAll={handleSettleAll}
             formatVND={formatVND}
+            selectedMonth={selectedMonth}
           />
         );
       default:
@@ -272,9 +336,17 @@ function AppContent() {
           title={getHeaderTitle()}
           user={user}
           onExitGroup={handleExitGroup}
+          groupId={activeGroupId}
         />
 
         <main className="flex-1 overflow-y-auto pb-24 md:pb-8 pt-6 px-4 md:px-8 max-w-7xl mx-auto w-full hide-scrollbar">
+          {['overview', 'transactions', 'balances'].includes(activeTab) && (
+            <MonthFilter 
+              selectedMonth={selectedMonth} 
+              onChangeMonth={setSelectedMonth} 
+              availableMonths={availableMonths} 
+            />
+          )}
           {renderTabContent()}
         </main>
 
@@ -297,6 +369,7 @@ function AppContent() {
           onClose={() => setIsSettleModalOpen(false)}
           onAddTransaction={handleAddTransaction}
           formatVND={formatVND}
+          defaultDate={getSettleDate()}
         />
       )}
     </div>

@@ -10,9 +10,10 @@ interface GroupBalancesProps {
   onSettleMember: (memberId: string) => void;
   onSettleAll: () => void;
   formatVND: (value: number) => string;
+  selectedMonth: string;
 }
 
-export default function GroupBalances({ transactions, members, membersMap, currentUserId, onSettleMember, onSettleAll, formatVND }: GroupBalancesProps) {
+export default function GroupBalances({ transactions, members, membersMap, currentUserId, onSettleMember, onSettleAll, formatVND, selectedMonth }: GroupBalancesProps) {
   const [notification, setNotification] = useState('');
 
   const totalGroupSpending = transactions.reduce((sum, tx) => sum + tx.amount, 0);
@@ -58,7 +59,11 @@ export default function GroupBalances({ transactions, members, membersMap, curre
       <section className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
           <h2 className="text-2xl md:text-3xl font-extrabold text-[#012d1d] tracking-tight">Thành viên & Số dư</h2>
-          <p className="text-stone-500 text-sm font-medium mt-1">Tổng quan sòng phẳng nợ nần của các thành viên.</p>
+          <p className="text-stone-500 text-sm font-medium mt-1">
+            {selectedMonth === 'all' 
+              ? 'Tổng quan sòng phẳng nợ nần của các thành viên.' 
+              : `Tổng quan sòng phẳng nợ nần trong tháng ${selectedMonth.split('-')[1]}/${selectedMonth.split('-')[0]}.`}
+          </p>
         </div>
         <button
           onClick={() => { onSettleAll(); triggerNotification('🎉 Tất cả số dư nợ đã được quyết toán sòng phẳng!'); }}
@@ -133,7 +138,7 @@ export default function GroupBalances({ transactions, members, membersMap, curre
         <div className="lg:col-span-2 space-y-2">
           <h3 className="font-bold text-base text-[#012d1d] tracking-tight">Tổng kết nhóm chi tiêu</h3>
           <p className="text-stone-600 text-xs md:text-sm font-medium leading-relaxed">
-            Tổng chi tiêu tháng này dồn lại là{' '}
+            Tổng chi tiêu {selectedMonth === 'all' ? 'tất cả thời gian' : `tháng ${selectedMonth.split('-')[1]}/${selectedMonth.split('-')[0]}`} dồn lại là{' '}
             <strong className="text-[#012d1d] text-sm md:text-base font-extrabold font-sans">{formatVND(totalGroupSpending)}</strong>.
             Có <strong className="text-[#012d1d] font-bold">{Object.values(balances).filter(b => b < 0).length} thành viên nợ</strong>{' '}
             cần được quyết toán sòng phẳng.

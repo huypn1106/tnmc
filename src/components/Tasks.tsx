@@ -210,7 +210,7 @@ service cloud.firestore {
   const handleDeleteTask = async (taskId: string) => {
     if (!confirm('Bạn có chắc chắn muốn xóa nhiệm vụ này?')) return;
     try {
-      await deleteTask(groupId, taskId);
+      await deleteTask(groupId, taskId, currentUserId);
     } catch (error) {
       console.error('Lỗi khi xóa nhiệm vụ:', error);
     }
