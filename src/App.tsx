@@ -4,8 +4,16 @@ import { useGroup } from './hooks/useGroup';
 import { useTransactions, useBalances } from './hooks/useTransactions';
 import { useTasks } from './hooks/useTasks';
 import { useNotes } from './hooks/useNotes';
-import { addTransaction as firestoreAddTransaction, deleteTransaction, updateTransaction as firestoreUpdateTransaction } from './lib/firestore';
-import { Transaction, GroupMember } from './types';
+import { usePersonalTransactions } from './hooks/usePersonalTransactions';
+import {
+  addTransaction as firestoreAddTransaction,
+  deleteTransaction,
+  updateTransaction as firestoreUpdateTransaction,
+  addPersonalTransaction,
+  updatePersonalTransaction,
+  deletePersonalTransaction,
+} from './lib/firestore';
+import { Transaction, GroupMember, PersonalTransaction } from './types';
 
 import LoginPage from './components/LoginPage';
 import GroupSelector from './components/GroupSelector';
@@ -19,6 +27,7 @@ import GroupBalances from './components/GroupBalances';
 import SettleUpModal from './components/SettleUpModal';
 import Tasks from './components/Tasks';
 import Notes from './components/Notes';
+import PersonalSpending from './components/PersonalSpending';
 import MonthFilter from './components/MonthFilter';
 
 // Core vietnamese currency formatter helper
@@ -44,6 +53,7 @@ function AppContent() {
   const { transactions, loading: txLoading } = useTransactions(activeGroupId);
   const { tasks, loading: tasksLoading, error: tasksError } = useTasks(activeGroupId);
   const { notes, loading: notesLoading, error: notesError } = useNotes(activeGroupId);
+  const { personalTransactions, loading: personalLoading } = usePersonalTransactions(user?.uid);
 
   // Get member UIDs and member map from group
   const memberUids = group?.memberUids || [];
@@ -131,9 +141,40 @@ function AppContent() {
   }
 
   // Add transaction handler
-  const handleAddTransaction = async (tx: Omit<Transaction, 'id' | 'createdAt'>) => {
+  const handleAddTransaction = async (tx: Omit<Transaction, 'id' | 'createdAt'>, addToPersonal?: boolean) => {
     if (!activeGroupId) return;
     await firestoreAddTransaction(activeGroupId, tx);
+
+    if (addToPersonal && user) {
+      const isUserInSplit = tx.splitWith.includes(user.uid);
+      const splitCount = tx.splitWith.length > 0 ? tx.splitWith.length : 1;
+      const userShare = isUserInSplit ? Math.round(tx.amount / splitCount) : 0;
+
+      if (userShare > 0) {
+        await addPersonalTransaction(user.uid, {
+          title: tx.title,
+          description: tx.description ? `${tx.description} (Chia ${splitCount} người)` : `Phần chi tiêu cá nhân (Chia ${splitCount} người)`,
+          category: tx.category,
+          amount: userShare,
+          date: tx.date,
+        });
+      }
+    }
+  };
+
+  const handleAddPersonalTransaction = async (tx: Omit<PersonalTransaction, 'id' | 'createdAt' | 'userId'>) => {
+    if (!user) return;
+    await addPersonalTransaction(user.uid, tx);
+  };
+
+  const handleUpdatePersonalTransaction = async (txId: string, updates: Partial<PersonalTransaction>) => {
+    if (!user) return;
+    await updatePersonalTransaction(user.uid, txId, updates);
+  };
+
+  const handleDeletePersonalTransaction = async (txId: string) => {
+    if (!user) return;
+    await deletePersonalTransaction(user.uid, txId);
   };
 
   // Settle a single member
@@ -235,6 +276,8 @@ function AppContent() {
         return `${groupName}`;
       case 'transactions':
         return 'Lịch sử Giao dịch';
+      case 'personal':
+        return 'Chi tiêu cá nhân';
       case 'tasks':
         return 'Danh sách Nhiệm vụ';
       case 'notes':
@@ -274,6 +317,17 @@ function AppContent() {
             formatVND={formatVND}
             onDeleteTransaction={handleDeleteTransaction}
             onUpdateTransaction={handleUpdateTransaction}
+          />
+        );
+      case 'personal':
+        return (
+          <PersonalSpending
+            transactions={personalTransactions}
+            userId={user.uid}
+            onAddTransaction={handleAddPersonalTransaction}
+            onUpdateTransaction={handleUpdatePersonalTransaction}
+            onDeleteTransaction={handleDeletePersonalTransaction}
+            formatVND={formatVND}
           />
         );
       case 'tasks':

@@ -81,3 +81,15 @@ export interface GroupNotification {
     assignedTo?: string;
   };
 }
+
+export interface PersonalTransaction {
+  id: string;
+  title: string;
+  description: string;
+  category: CategoryType;
+  amount: number;
+  date: string; // YYYY-MM-DD
+  userId: string;
+  createdAt: string;
+}
+

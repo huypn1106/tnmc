@@ -15,7 +15,7 @@ import {
   Timestamp,
 } from 'firebase/firestore';
 import { db } from './firebase';
-import { Group, GroupMember, Transaction, Task, GroupNotification, Note } from '../types';
+import { Group, GroupMember, Transaction, Task, GroupNotification, Note, PersonalTransaction } from '../types';
 
 // ─── Group Operations ───
 
@@ -743,3 +743,73 @@ export async function clearAllNotifications(
   );
   await Promise.all(promises);
 }
+
+// ─── Personal Transaction Operations ───
+
+export async function addPersonalTransaction(
+  userId: string,
+  tx: Omit<PersonalTransaction, 'id' | 'createdAt' | 'userId'>
+): Promise<string> {
+  const txData = {
+    ...tx,
+    userId,
+    createdAt: new Date().toISOString(),
+  };
+
+  const docRef = await addDoc(
+    collection(db, 'users', userId, 'personal_transactions'),
+    txData
+  );
+
+  return docRef.id;
+}
+
+export async function deletePersonalTransaction(
+  userId: string,
+  txId: string
+): Promise<void> {
+  const txRef = doc(db, 'users', userId, 'personal_transactions', txId);
+  await deleteDoc(txRef);
+}
+
+export async function updatePersonalTransaction(
+  userId: string,
+  txId: string,
+  updates: Partial<PersonalTransaction>
+): Promise<void> {
+  const txRef = doc(db, 'users', userId, 'personal_transactions', txId);
+  await updateDoc(txRef, {
+    ...updates,
+    updatedAt: new Date().toISOString(),
+  });
+}
+
+export function subscribeToPersonalTransactions(
+  userId: string,
+  callback: (transactions: PersonalTransaction[]) => void,
+  onError?: (error: any) => void
+): () => void {
+  const q = query(
+    collection(db, 'users', userId, 'personal_transactions'),
+    orderBy('createdAt', 'desc')
+  );
+
+  return onSnapshot(
+    q,
+    (snapshot) => {
+      const transactions: PersonalTransaction[] = snapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      })) as PersonalTransaction[];
+      callback(transactions);
+    },
+    (error) => {
+      if (onError) {
+        onError(error);
+      } else {
+        console.error('Error subscribing to personal transactions:', error);
+      }
+    }
+  );
+}
+

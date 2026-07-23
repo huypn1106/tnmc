@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { LayoutGrid, Receipt, PlusCircle, Users, Copy, Check, LogOut, CheckSquare, StickyNote } from 'lucide-react';
+import { LayoutGrid, Receipt, PlusCircle, Users, Copy, Check, LogOut, CheckSquare, StickyNote, Wallet } from 'lucide-react';
 
 interface SidebarProps {
   activeTab: string;
@@ -16,9 +16,9 @@ export default function Sidebar({ activeTab, setActiveTab, onSettleUpClick, grou
   const menuItems = [
     { id: 'overview', label: 'Tổng quan', icon: LayoutGrid },
     { id: 'transactions', label: 'Giao dịch', icon: Receipt },
+    { id: 'new-expense', label: 'Thêm chi phí', icon: PlusCircle },
     { id: 'tasks', label: 'Nhiệm vụ', icon: CheckSquare },
     { id: 'notes', label: 'Ghi chú', icon: StickyNote },
-    { id: 'new-expense', label: 'Thêm chi phí', icon: PlusCircle },
     { id: 'balances', label: 'Thành viên & Số dư', icon: Users },
   ];
 
@@ -69,9 +69,8 @@ export default function Sidebar({ activeTab, setActiveTab, onSettleUpClick, grou
             const isActive = activeTab === item.id;
             return (
               <button key={item.id} onClick={() => setActiveTab(item.id)}
-                className={`flex items-center gap-3 w-full px-4 py-3 rounded-xl transition-all font-medium text-sm text-left group border border-transparent ${
-                  isActive ? 'bg-[#1b4332] text-white shadow-sm' : 'text-[#414844] hover:bg-white hover:text-[#012d1d] hover:border-stone-100'
-                }`}>
+                className={`flex items-center gap-3 w-full px-4 py-3 rounded-xl transition-all font-medium text-sm text-left group border border-transparent ${isActive ? 'bg-[#1b4332] text-white shadow-sm' : 'text-[#414844] hover:bg-white hover:text-[#012d1d] hover:border-stone-100'
+                  }`}>
                 <Icon size={18} className={`transition-colors duration-200 ${isActive ? 'text-white' : 'text-stone-500 group-hover:text-[#012d1d]'}`} />
                 <span>{item.label}</span>
               </button>
@@ -81,16 +80,37 @@ export default function Sidebar({ activeTab, setActiveTab, onSettleUpClick, grou
       </div>
 
       {/* Bottom actions */}
-      <div className="px-4 space-y-2">
-        <button onClick={onSettleUpClick}
-          className="w-full bg-[#012d1d] hover:bg-[#152b1c] text-white py-3.5 px-4 rounded-xl font-semibold text-sm transition-all shadow-md active:scale-98 select-none cursor-pointer">
-          Settle Up
+      <div className="px-4 space-y-3">
+        {/* Personal Spending Special Tile */}
+        <button
+          onClick={() => setActiveTab('personal')}
+          className={`w-full flex items-center justify-between px-3.5 py-3 rounded-2xl transition-all duration-200 cursor-pointer border select-none ${activeTab === 'personal'
+              ? 'bg-[#012d1d] text-white border-[#012d1d] shadow-md ring-2 ring-emerald-400/40'
+              : 'bg-emerald-50/80 hover:bg-emerald-100/90 text-emerald-950 border-emerald-200/80 shadow-xs'
+            }`}
+        >
+          <div className="flex items-center gap-2.5">
+            <div className={`p-1.5 rounded-xl ${activeTab === 'personal' ? 'bg-white/10 text-white' : 'bg-emerald-200/70 text-emerald-900'}`}>
+              <Wallet size={18} />
+            </div>
+            <div className="text-left min-w-0">
+              <p className="text-xs font-extrabold tracking-tight">Chi tiêu cá nhân</p>
+              <p className={`text-[10px] font-medium ${activeTab === 'personal' ? 'text-emerald-200' : 'text-emerald-700'}`}>Ví riêng</p>
+            </div>
+          </div>
         </button>
-        <button onClick={onExitGroup}
-          className="w-full flex items-center justify-center gap-2 text-stone-500 hover:text-stone-800 py-2.5 px-4 rounded-xl font-medium text-xs transition-colors cursor-pointer hover:bg-white">
-          <LogOut size={14} />
-          <span>Đổi nhóm</span>
-        </button>
+
+        <div className="pt-2 border-t border-stone-200/70 space-y-1.5">
+          <button onClick={onSettleUpClick}
+            className="w-full bg-[#012d1d] hover:bg-[#152b1c] text-white py-3 px-4 rounded-xl font-semibold text-xs transition-all shadow-md active:scale-98 select-none cursor-pointer">
+            Settle Up
+          </button>
+          <button onClick={onExitGroup}
+            className="w-full flex items-center justify-center gap-2 text-stone-500 hover:text-stone-800 py-2 px-4 rounded-xl font-medium text-xs transition-colors cursor-pointer hover:bg-white">
+            <LogOut size={14} />
+            <span>Đổi nhóm</span>
+          </button>
+        </div>
       </div>
     </nav>
   );

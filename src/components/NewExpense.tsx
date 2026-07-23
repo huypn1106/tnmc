@@ -5,7 +5,7 @@ import { Transaction, GroupMember, CategoryType } from '../types';
 interface NewExpenseProps {
   members: GroupMember[];
   currentUserId: string;
-  onAddTransaction: (tx: Omit<Transaction, 'id' | 'createdAt'>) => void;
+  onAddTransaction: (tx: Omit<Transaction, 'id' | 'createdAt'>, addToPersonal?: boolean) => void;
   setActiveTab: (tab: string) => void;
   formatVND: (value: number) => string;
 }
@@ -17,6 +17,7 @@ export default function NewExpense({ members, currentUserId, onAddTransaction, s
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
   const [paidBy, setPaidBy] = useState(currentUserId);
   const [splitWith, setSplitWith] = useState<string[]>(members.map(m => m.uid));
+  const [addToPersonal, setAddToPersonal] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
 
   const chips: { id: CategoryType; label: string; icon: any }[] = [
@@ -69,10 +70,11 @@ export default function NewExpense({ members, currentUserId, onAddTransaction, s
       paidBy,
       splitWith,
       createdBy: currentUserId,
-    });
+    }, addToPersonal);
     
     setAmount('');
     setDescription('');
+    setAddToPersonal(false);
   };
 
   return (
@@ -163,6 +165,22 @@ export default function NewExpense({ members, currentUserId, onAddTransaction, s
             </div>
           </div>
 
+          {/* Add to Personal Expense checkbox */}
+          <div className="pt-2">
+            <label className="flex items-center justify-between p-3.5 bg-stone-50 border border-[#c1c8c2] rounded-xl cursor-pointer hover:bg-stone-100/60 transition-colors select-none">
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-bold text-stone-800">Thêm vào chi tiêu cá nhân</span>
+                <span className="text-xs text-stone-400 font-medium">(Chỉ bạn nhìn thấy)</span>
+              </div>
+              <input
+                type="checkbox"
+                checked={addToPersonal}
+                onChange={(e) => setAddToPersonal(e.target.checked)}
+                className="w-5 h-5 rounded border-2 border-stone-300 text-[#1b4332] focus:ring-[#1b4332]/20 cursor-pointer"
+              />
+            </label>
+          </div>
+
           <div className="pt-4">
             <button type="submit" className="w-full bg-[#012d1d] hover:bg-[#152b1c] text-white py-4 px-4 rounded-xl font-bold text-sm transition-all shadow-md active:scale-98 flex justify-center items-center gap-2 select-none cursor-pointer">
               <Check size={18} className="stroke-[2.5px]" /><span>Lưu chi phí</span>
@@ -173,3 +191,4 @@ export default function NewExpense({ members, currentUserId, onAddTransaction, s
     </div>
   );
 }
+
